@@ -1,41 +1,66 @@
 import { useState, useEffect } from "react";
-import { getProducts, getCategories } from "../features/products/services/productService";
+import { filterProducts, getCategories } from "../features/products/services/productService";
 import ProductCard from "../features/products/components/ProductCard";
 
 export default function ProductsPage() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-
     // Basic state — not wired to filterProducts yet (student task)
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [sortBy, setSortBy] = useState("title");
     const [sortOrder, setSortOrder] = useState("asc");
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1); 
+    
+    const [totalPages ,setTotalPages] = useState(0);
+    const [totalProducts, setTotalProducts] = useState(0);
     const productsPerPage = 8;
 
-    useEffect(() => {
-        async function load() {
-            setLoading(true);
-            // Currently just loads all products — students should use filterProducts()
-            const allProducts = await getProducts();
-            setProducts(allProducts);
+    useEffect(function() {
+        async function fetchCategories() {
             const cats = await getCategories();
             setCategories(cats);
-            // Simulate a short loading time so the spinner is visible
-            setTimeout(() => setLoading(false), 600);
         }
-        load();
-    }, []);
+        fetchCategories();
+    }, [])
 
-    // Basic client-side pagination (not using filterProducts — student task)
-    const startIndex = (currentPage - 1) * productsPerPage;
-    const paginatedProducts = products.slice(
-        startIndex,
-        startIndex + productsPerPage
-    );
-    const totalPages = Math.ceil(products.length / productsPerPage);
+    useEffect(function() {
+        let isMounted = true;
+        async function loadFilteredProducts() {
+            setLoading(true);
+            try {
+                const result = await filterProducts({
+                    search,
+                    category:selectedCategory,
+                    sortBy,
+                    sortOrder,
+                    page: currentPage,
+                    limit: productsPerPage,
+                })
+
+                if(isMounted) {
+                    setProducts(result.data);
+                    setTotalPages(result.totalPages);
+                    setTotalProducts(result.totalProducts);
+                }
+            }catch (error) {
+                console.error("Error loading products:", error);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        }
+
+        const timeoutId = setTimeout(() => {
+            loadFilteredProducts();
+        },300)
+
+        return () => {
+            isMounted = false;
+            clearTimeout(timeoutId);
+        }
+
+    } ,[search, selectedCategory, sortBy, sortOrder,currentPage])
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -43,7 +68,7 @@ export default function ProductsPage() {
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">All Products</h1>
                 <p className="text-gray-500">
-                    Browse our collection of {products.length} premium products
+                    Browse our collection of {totalProducts} premium products
                 </p>
             </div>
 
@@ -69,7 +94,10 @@ export default function ProductsPage() {
                             type="text"
                             placeholder="Search products..."
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                                setCurrentPage(1)
+                            }}
                             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                     </div>
@@ -77,7 +105,10 @@ export default function ProductsPage() {
                     {/* Category Filter */}
                     <select
                         value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        onChange={(e) => {
+                            setSelectedCategory(e.target.value);
+                            setCurrentPage(1);
+                        }}
                         className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                         <option value="">All Categories</option>
@@ -95,6 +126,7 @@ export default function ProductsPage() {
                             const [by, order] = e.target.value.split("-");
                             setSortBy(by);
                             setSortOrder(order);
+                            setCurrentPage(1);
                         }}
                         className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
@@ -117,13 +149,13 @@ export default function ProductsPage() {
                 <>
                     {/* Product Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                        {paginatedProducts.map((product) => (
+                        {products.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
 
                     {/* Empty State */}
-                    {paginatedProducts.length === 0 && (
+                    {products.length === 0 && (
                         <div className="text-center py-16">
                             <svg
                                 className="w-16 h-16 text-gray-300 mx-auto mb-4"
