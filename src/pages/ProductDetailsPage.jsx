@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getProductById } from "../features/products/services/productService";
+import { getProductById, getReviewsByProductId } from "../features/products/services/productService";
 import useCartStore from "../features/cart/hooks/useCartStore";
 import useWishlistStore from "../features/wishlist/hooks/useWishlistStore";
 import useCompareStore from "../features/compare/useCompareStore";
@@ -10,6 +10,8 @@ export default function ProductDetailsPage() {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState(null);
+    const [reviews, setReviews] = useState([])
+
     const addToCart = useCartStore((s) => s.addToCart);
     const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
     const isInWishlist = useWishlistStore((s) => s.isInWishlist(Number(id)));
@@ -22,10 +24,20 @@ export default function ProductDetailsPage() {
     useEffect(() => {
         async function load() {
             setLoading(true);
-            const p = await getProductById(id);
+            try{
+            const [p, r] = await Promise.all([
+                getProductById(id),
+                getReviewsByProductId(id),
+            ]);
             setProduct(p);
+            const sortedReviews = r.sort((a, b) => new Date(b.date) - new Date(a.date));
+            setReviews(sortedReviews);
+        }catch(error) {
+            console.error("Error loading product details:", error);
+        }finally{
             setLoading(false);
         }
+    }
         load();
     }, [id]);
 
@@ -109,6 +121,11 @@ export default function ProductDetailsPage() {
     }
 
     const time = formatCountdown(countdown);
+
+    const totalReviews = reviews.length;
+    const avgRating = totalReviews > 0 
+        ? (reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) 
+        : 0;
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -256,14 +273,53 @@ export default function ProductDetailsPage() {
 
                     {/* Reviews Placeholder — Student task to implement */}
                     <div className="mt-10 border-t border-gray-100 pt-8">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">
-                            Customer Reviews
-                        </h3>
-                        <div className="bg-gray-50 rounded-xl p-6 text-center">
-                            <p className="text-gray-400 text-sm">
-                                Reviews will be displayed here.
-                            </p>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                            <h3 className="text-xl font-bold text-gray-900">
+                                Customer Reviews
+                            </h3>
+                            {totalReviews > 0 && (
+                                <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl">
+                                    <div className="flex">{renderStars(avgRating)}</div>
+                                    <span className="font-semibold text-gray-900">{avgRating} out of 5</span>
+                                    <span className="text-sm text-gray-500">({totalReviews} reviews)</span>
+                                </div>
+                            )}
                         </div>
+
+                        {totalReviews === 0 ? (
+                            <div className="bg-gray-50 rounded-xl p-8 text-center border border-dashed border-gray-200">
+                                <p className="text-gray-500">No reviews yet. Be the first to review this product!</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {reviews.slice(0, 5).map((review) => (
+                                    <div key={review.id} className="border-b border-gray-50 pb-6 last:border-0 last:pb-0">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-semibold text-gray-900">
+                                                {review.reviewerName}
+                                            </span>
+                                            <span className="text-sm text-gray-400">
+                                                {new Date(review.date).toLocaleDateString("en-US", {
+                                                    year: "numeric",
+                                                    month: "long",
+                                                    day: "numeric",
+                                                })}
+                                            </span>
+                                        </div>
+                                        <div className="flex mb-3">{renderStars(review.rating)}</div>
+                                        <p className="text-gray-600 text-sm leading-relaxed">
+                                            {review.comment}
+                                        </p>
+                                    </div>
+                                ))}
+
+                                {totalReviews > 5 && (
+                                    <button className="w-full py-3.5 border-2 border-gray-100 rounded-xl text-sm font-semibold text-gray-600 hover:border-gray-200 hover:bg-gray-50 transition-colors mt-4">
+                                        Show all {totalReviews} reviews
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
