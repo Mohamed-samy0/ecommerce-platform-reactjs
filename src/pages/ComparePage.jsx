@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { getProducts } from "../features/products/services/productService";
+import useCompareStore from "../features/compare/useCompareStore";
 
 export default function ComparePage() {
     const [products, setProducts] = useState([]);
-    const [selectedProductA, setSelectedProductA] = useState("");
-    const [selectedProductB, setSelectedProductB] = useState("");
+    const compareItems = useCompareStore((s) => s.compareItems);
 
     useEffect(() => {
         async function load() {
@@ -15,8 +15,22 @@ export default function ComparePage() {
     }, []);
 
     // Comparison logic not implemented — student task
-    const productA = products.find((p) => p.id === Number(selectedProductA));
-    const productB = products.find((p) => p.id === Number(selectedProductB));
+    const productA = compareItems[0] || null;
+    const productB = compareItems[1] || null;
+
+    const handleSelectProduct =(index, productId) => {
+        const selected = products.find((p) => p.id === Number(productId)) || null;
+        const newItems = [...compareItems];
+        newItems[index] = selected;
+        useCompareStore.setState({ compareItems: newItems.filter(Boolean).slice(0, 2) });
+    };
+
+    const isBetter = (key, val1, val2) => {
+        if (val1 == null || val2 == null) return false;
+        if (key === "price") return val1 < val2;
+        if (key === "rating" || key === "stock") return val1 > val2;
+        return false;
+    };
 
     const comparisonFields = [
         { label: "Price", key: "price", format: (v) => `$${v?.toFixed(2) || "—"}` },
@@ -41,8 +55,8 @@ export default function ComparePage() {
                         Product A
                     </label>
                     <select
-                        value={selectedProductA}
-                        onChange={(e) => setSelectedProductA(e.target.value)}
+                        value={productA?.id || ""}
+                        onChange={(e) => handleSelectProduct(0,e.target.value)}
                         className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                         <option value="">Select a product...</option>
@@ -58,8 +72,8 @@ export default function ComparePage() {
                         Product B
                     </label>
                     <select
-                        value={selectedProductB}
-                        onChange={(e) => setSelectedProductB(e.target.value)}
+                        value={productB?.id || ""}
+                        onChange={(e) => handleSelectProduct(1,e.target.value)}
                         className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                         <option value="">Select a product...</option>
@@ -119,7 +133,16 @@ export default function ComparePage() {
                     </div>
 
                     {/* Comparison Rows */}
-                    {comparisonFields.map((field) => (
+                    {comparisonFields.map((field) => {
+                        const valA = productA ? productA[field.key] : null;
+                        const valB = productB ? productB[field.key] : null;
+
+                        const isABetter = productA && productB && isBetter(field.key, valA, valB);
+                        const isBBetter = productA && productB && isBetter(field.key, valB, valA);
+
+                        const isAWorse = isBBetter;
+                        const isBWorse = isABetter;
+                    return (
                         <div
                             key={field.key}
                             className="grid grid-cols-3 border-b border-gray-50 last:border-0"
@@ -127,14 +150,24 @@ export default function ComparePage() {
                             <div className="p-4 bg-gray-50 text-sm font-medium text-gray-600">
                                 {field.label}
                             </div>
-                            <div className="p-4 text-center text-sm text-gray-800 border-l border-gray-100">
-                                {productA ? field.format(productA[field.key]) : "—"}
+                            <div className={`p-4 text-center text-sm border-l border-gray-100 transition-colors 
+                                    ${isABetter ? "text-green-700 font-semibold" : ""} 
+                                    ${isAWorse ? " text-red-700 font-semibold" : ""} 
+                                    ${!isABetter && !isAWorse ? "text-gray-800" : ""}
+                                `}>
+                                {productA ? field.format(valA) : "—"}
                             </div>
-                            <div className="p-4 text-center text-sm text-gray-800 border-l border-gray-100">
-                                {productB ? field.format(productB[field.key]) : "—"}
+                            <div className={`p-4 text-center text-sm border-l border-gray-100 transition-colors 
+                                    ${isBBetter ? "text-green-700 font-semibold" : ""} 
+                                    ${isBWorse ? "text-red-700 font-semibold" : ""} 
+                                    ${!isBBetter && !isBWorse ? "text-gray-800" : ""}
+                                `}>
+                                {productB ? field.format(valB) : "—"}
                             </div>
                         </div>
-                    ))}
+                    )
+                    
+                    })}
 
                     {/* Description */}
                     <div className="grid grid-cols-3 border-t border-gray-100">

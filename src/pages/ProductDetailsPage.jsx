@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getProductById } from "../features/products/services/productService";
 import useCartStore from "../features/cart/hooks/useCartStore";
 import useWishlistStore from "../features/wishlist/hooks/useWishlistStore";
+import useCompareStore from "../features/compare/useCompareStore";
 
 export default function ProductDetailsPage() {
     const { id } = useParams();
@@ -10,8 +11,13 @@ export default function ProductDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState(null);
     const addToCart = useCartStore((s) => s.addToCart);
-    const addToWishlist = useWishlistStore((s) => s.addToWishlist);
+    const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
     const isInWishlist = useWishlistStore((s) => s.isInWishlist(Number(id)));
+
+    const addToCompare = useCompareStore((s) => s.addToCompare);
+    const removeFromCompare = useCompareStore((s) => s.removeFromCompare);
+    const compareItems = useCompareStore((s) => s.compareItems);
+    const isInCompare = product ? compareItems.some((item) => item.id === product.id) : false;
 
     useEffect(() => {
         async function load() {
@@ -217,7 +223,22 @@ export default function ProductDetailsPage() {
                             Add to Cart
                         </button>
                         <button
-                            onClick={() => addToWishlist(product)}
+                            onClick={() => {
+                                if (isInCompare) removeFromCompare(product.id);
+                                else addToCompare(product);
+                            }}
+                            className={`px-4 py-3.5 rounded-xl border-2 flex items-center justify-center transition-all ${
+                                isInCompare
+                                    ? "border-primary-500 bg-primary-50 text-primary-600"
+                                    : "border-gray-200 text-gray-400 hover:border-primary-300 hover:text-primary-600"
+                            }`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={() => toggleWishlist(product)}
                             className={`px-4 py-3.5 rounded-xl border-2 transition-all ${isInWishlist
                                 ? "border-accent-500 bg-accent-50 text-accent-500"
                                 : "border-gray-200 text-gray-400 hover:border-accent-300 hover:text-accent-500"
