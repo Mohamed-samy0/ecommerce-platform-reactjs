@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import toast from 'react-hot-toast';
 
 const useCartStore = create((set, get) => ({
     items: [],
@@ -6,6 +7,10 @@ const useCartStore = create((set, get) => ({
     addToCart: (product) => {
         const items = get().items;
         const existingItem = items.find((item) => item.id === product.id);
+
+        toast.success(`${product.title} added to cart!`, {
+            id: `add-${product.id}`, 
+        });
 
         if (existingItem) {
             // Prevent exceeding stock
@@ -25,6 +30,9 @@ const useCartStore = create((set, get) => ({
     },
 
     removeFromCart: (productId) => {
+        toast.success('Item removed from cart', {
+            id: `remove-${productId}`,
+        });
         set({
             items: get().items.filter((item) => item.id !== productId),
         });

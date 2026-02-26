@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware"; // Because save the data
+import toast from 'react-hot-toast';
 
 const useWishlistStore = create(
     persist((set, get) => ({
@@ -23,8 +24,10 @@ const useWishlistStore = create(
         const inWishlist = get().isInWishlist(product.id);
         if(inWishlist) {
             get().removeFromWishlist(product.id);
+            toast('Removed from wishlist', {icon: '💔', id: `wish-${product.id}` });
         }else{ 
-            get().addToWishlist(product)
+            get().addToWishlist(product);
+            toast.success('Added to wishlist!', { icon: '❤️', id: `wish-${product.id}` });
         }
     },
 
