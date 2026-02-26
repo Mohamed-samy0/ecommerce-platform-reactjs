@@ -1,38 +1,35 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import useCartStore from "../features/cart/hooks/useCartStore";
+import { useForm } from "react-hook-form";
 
 export default function CheckoutPage() {
     const items = useCartStore((s) => s.items);
     const clearCart = useCartStore((s) => s.clearCart);
     const [orderPlaced, setOrderPlaced] = useState(false);
 
-    const [form, setForm] = useState({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        address: "",
-        city: "",
-        zipCode: "",
-        country: "",
-    });
-
     const totalPrice = items.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
     );
 
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+    const  {register, handleSubmit, formState: {errors}, reset} = useForm({
+        mode: "onChange"
+    })
 
     // No validation implemented — student task
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const onSubmit = (data) => {
+        console.log(data)
         clearCart();
         setOrderPlaced(true);
+        reset();
     };
+
+    const getInputClass = (error) => `w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+        error 
+            ? "border-red-500 focus:border-red-500 bg-red-50/30" 
+            : "border-gray-200 focus:border-transparent bg-white"
+    }`;
 
     if (orderPlaced) {
         return (
@@ -97,7 +94,7 @@ export default function CheckoutPage() {
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Shipping Form */}
                     <div className="lg:col-span-2">
@@ -113,11 +110,11 @@ export default function CheckoutPage() {
                                     <input
                                         type="text"
                                         name="firstName"
-                                        value={form.firstName}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        {...register("firstName", { required: "This field is required" })}
+                                        className={getInputClass(errors.firstName)}
                                         placeholder="John"
                                     />
+                                    {errors.firstName && <p className="text-red-500 text-xs mt-1.5">{errors.firstName.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -126,11 +123,11 @@ export default function CheckoutPage() {
                                     <input
                                         type="text"
                                         name="lastName"
-                                        value={form.lastName}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        {...register("lastName", { required: "This field is required" })}
+                                        className={getInputClass(errors.lastName)}
                                         placeholder="Doe"
                                     />
+                                    {errors.lastName && <p className="text-red-500 text-xs mt-1.5">{errors.lastName.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -139,11 +136,17 @@ export default function CheckoutPage() {
                                     <input
                                         type="email"
                                         name="email"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        {...register("email", { 
+                                            required: "This field is required", 
+                                            pattern: { 
+                                                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 
+                                                message: "Please enter a valid email address" 
+                                            } 
+                                        })}
+                                        className={getInputClass(errors.email)}
                                         placeholder="john@example.com"
                                     />
+                                    {errors.email && <p className="text-red-500 text-xs mt-1.5">{errors.email.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -152,11 +155,11 @@ export default function CheckoutPage() {
                                     <input
                                         type="tel"
                                         name="phone"
-                                        value={form.phone}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        {...register("phone", { required: "This field is required", pattern: { value: /^\+?[1-9]\d{1,14}$/, message: "Invalid phone number" } })}
+                                        className={getInputClass(errors.phone)}
                                         placeholder="+1 (555) 000-0000"
                                     />
+                                    {errors.phone && <p className="text-red-500 text-xs mt-1.5">{errors.phone.message}</p>}
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -165,11 +168,11 @@ export default function CheckoutPage() {
                                     <input
                                         type="text"
                                         name="address"
-                                        value={form.address}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        {...register("address", { required: "This field is required" })}
+                                        className={getInputClass(errors.address)}
                                         placeholder="123 Main Street"
                                     />
+                                    {errors.address && <p className="text-red-500 text-xs mt-1.5">{errors.address.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -178,11 +181,11 @@ export default function CheckoutPage() {
                                     <input
                                         type="text"
                                         name="city"
-                                        value={form.city}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        {...register("city", { required: "This field is required" })}
+                                        className={getInputClass(errors.city)}
                                         placeholder="New York"
                                     />
+                                    {errors.city && <p className="text-red-500 text-xs mt-1.5">{errors.city.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -191,11 +194,11 @@ export default function CheckoutPage() {
                                     <input
                                         type="text"
                                         name="zipCode"
-                                        value={form.zipCode}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        {...register("zipCode", { required: "This field is required" })}
+                                        className={getInputClass(errors.zipCode)}
                                         placeholder="10001"
                                     />
+                                    {errors.zipCode && <p className="text-red-500 text-xs mt-1.5">{errors.zipCode.message}</p>}
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -203,9 +206,8 @@ export default function CheckoutPage() {
                                     </label>
                                     <select
                                         name="country"
-                                        value={form.country}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                                        {...register("country", { required: "This field is required" })}
+                                        className={getInputClass(errors.country)}
                                     >
                                         <option value="">Select country</option>
                                         <option value="US">United States</option>
@@ -215,6 +217,7 @@ export default function CheckoutPage() {
                                         <option value="FR">France</option>
                                         <option value="AU">Australia</option>
                                     </select>
+                                    {errors.country && <p className="text-red-500 text-xs mt-1.5">{errors.country.message}</p>}
                                 </div>
                             </div>
                         </div>
