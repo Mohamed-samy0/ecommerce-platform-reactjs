@@ -1,7 +1,10 @@
 import { create } from "zustand";
+import { persist } from 'zustand/middleware';
 import toast from 'react-hot-toast';
 
-const useCartStore = create((set, get) => ({
+const useCartStore = create(
+    persist(
+    (set, get) => ({
     items: [],
 
     addToCart: (product) => {
@@ -59,17 +62,6 @@ const useCartStore = create((set, get) => ({
 
     clearCart: () => set({ items: [] }),
 
-    get totalItems() {
-        return get().items.reduce((sum, item) => sum + item.quantity, 0);
-    },
-
-    get totalPrice() {
-        return get().items.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0
-        );
-    },
-
     getTotalItems: () => {
         return get().items.reduce((sum, item) => sum + item.quantity, 0);
     },
@@ -80,6 +72,10 @@ const useCartStore = create((set, get) => ({
             0
         );
     },
-}));
+}),
+    {
+        name: "cart-storage",
+    }
+));
 
 export default useCartStore;
