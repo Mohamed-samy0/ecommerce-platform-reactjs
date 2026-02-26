@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { filterProducts, getCategories } from "../features/products/services/productService";
 import ProductCard from "../features/products/components/ProductCard";
 import { useSearchParams } from "react-router-dom";
+import ProductCardSkeleton from "../components/ProductCardSkeleton"
 
 export default function ProductsPage() {
     const [products, setProducts] = useState([]);
@@ -18,6 +19,8 @@ export default function ProductsPage() {
     const [totalPages ,setTotalPages] = useState(0);
     const [totalProducts, setTotalProducts] = useState(0);
     const productsPerPage = 8;
+
+    
 
     useEffect(function() {
         async function fetchCategories() {
@@ -64,6 +67,18 @@ export default function ProductsPage() {
 
     } ,[search, selectedCategory, sortBy, sortOrder,currentPage])
 
+
+    if (loading) {
+    return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(8)].map((_, index) => (
+                    <ProductCardSkeleton key={index} />
+                ))}
+            </div>
+        </div>
+    );
+}
 
     function handleSearch(e) {
         const value = e.target.value;
